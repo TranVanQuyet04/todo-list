@@ -137,7 +137,7 @@
 
     function fmtDateISO(d) {
       if (!d) return "";
-      return new Date(d + "T00:00:00").toISOString().slice(0,10);
+      return String(d).slice(0, 10);
     }
 
     function formatDueDate(value) {
