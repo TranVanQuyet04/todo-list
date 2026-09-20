@@ -1,15 +1,18 @@
-# Todo List
+# Todo Schedule
 
-A calm, responsive personal task manager built with HTML, CSS, and vanilla JavaScript.
+A lightweight personal daily planner built with HTML, CSS, and vanilla JavaScript.
 
 ## Features
 
+- Daily schedule with a clear timed-task timeline
+- Seven-day date navigation and a quick Today action
+- Start and end times with validation
+- Unscheduled and overdue task sections
+- Daily completion progress
+- Low, medium, and high priority
+- Search, status filters, and sorting
 - Add, edit, duplicate, complete, and delete tasks
-- Due dates and priority levels
-- Search and All / Active / Done filters
-- Newest, oldest, and due-date sorting
-- Bulk toggle and clear-completed actions
-- LocalStorage persistence
+- LocalStorage persistence with safe legacy-data normalization
 - JSON import and export
 - Responsive dark interface
 
@@ -29,4 +32,6 @@ Then open `http://127.0.0.1:4173/`.
 
 ## Data migration
 
-LocalStorage is scoped to each browser origin. Data stored when opening the HTML file directly does not automatically transfer to the deployed HTTPS site. Export tasks from the old version and import the JSON file into the live site when migration is needed.
+Existing tasks saved under `todo.v1.items` are normalized automatically. Legacy fields such as `text`, `done`, `due`, and `dueDate` are mapped to the new schedule model while existing IDs are preserved. Before the first migrated save, the original payload is backed up once under `todo.v1.items.legacyBackup`.
+
+LocalStorage is scoped to each browser origin. Data saved while opening the app with `file://` cannot automatically appear on the HTTPS live site. Use Export in the old app, then Import on the live site to move those tasks.
