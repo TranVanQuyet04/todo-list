@@ -29,4 +29,4 @@ Then open `http://127.0.0.1:4173/`.
 
 ## Data migration
 
-LocalStorage is scoped to each browser origin. Data stored by a `file://` version does not automatically transfer to the deployed HTTPS site. Export tasks from the old version and import the JSON file into the live site when migration is needed.
+LocalStorage is scoped to each browser origin. Data stored when opening the HTML file directly does not automatically transfer to the deployed HTTPS site. Export tasks from the old version and import the JSON file into the live site when migration is needed.
