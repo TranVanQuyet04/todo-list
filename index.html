@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="oklch(17% 0.012 270)" />
+  <title>My Tasks</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <a class="skip-link" href="#taskList">Skip to tasks</a>
+  <div class="app" role="application" aria-label="My Tasks">
+    <header class="app-header">
+      <div class="title">
+        <h1>My Tasks</h1>
+        <p id="currentDate" aria-label="Current date"></p>
+      </div>
+      <div class="stats" id="stats" aria-label="Task summary">
+        <div class="stat"><span id="countAll">0</span><span>total</span></div>
+        <span class="stat-separator" aria-hidden="true"></span>
+        <div class="stat"><span id="countActive">0</span><span>active</span></div>
+        <span class="stat-separator" aria-hidden="true"></span>
+        <div class="stat"><span id="countDone">0</span><span>done</span></div>
+      </div>
+    </header>
+
+    <section class="composer" aria-labelledby="addTaskHeading">
+      <h2 id="addTaskHeading" class="sr-only">Add a task</h2>
+      <div class="composer-main">
+        <label class="field task-field" for="taskInput">
+          <span class="sr-only">Task name</span>
+          <span class="leading-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+          <input class="input" id="taskInput" placeholder="Add a task…" autocomplete="off" />
+        </label>
+        <button class="btn primary" id="addBtn" type="button">Add task</button>
+      </div>
+      <div class="composer-options">
+        <label class="field compact-field" for="dueInput">
+          <span class="field-label">Due date</span>
+          <input class="input" id="dueInput" type="date" />
+        </label>
+        <label class="field compact-field" for="priorityInput">
+          <span class="field-label">Priority</span>
+          <select class="select" id="priorityInput">
+            <option value="Medium" selected>Medium</option>
+            <option value="High">High</option>
+            <option value="Low">Low</option>
+          </select>
+        </label>
+        <span class="composer-hint"><kbd>Enter</kbd> to add</span>
+      </div>
+    </section>
+
+    <section class="utilities" aria-label="Search and task utilities">
+      <label class="field search-field" for="searchInput">
+        <span class="sr-only">Search tasks</span>
+        <span class="leading-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></svg>
+        </span>
+        <input class="input" id="searchInput" type="search" placeholder="Search tasks" autocomplete="off" />
+      </label>
+      <div class="utility-actions">
+        <button class="btn ghost" id="sortBtn" type="button" aria-label="Toggle sort">Newest</button>
+        <button class="btn ghost" id="exportBtn" type="button" aria-label="Export tasks as JSON">Export</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
+        <button class="btn ghost" id="importBtn" type="button" aria-label="Import tasks from JSON">Import</button>
+      </div>
+    </section>
+
+    <section class="list-toolbar" aria-label="Task filters and bulk actions">
+      <div class="tabs" role="tablist" aria-label="Filter tasks">
+        <button class="tab" role="tab" data-filter="all" aria-selected="true">All</button>
+        <button class="tab" role="tab" data-filter="active" aria-selected="false">Active</button>
+        <button class="tab" role="tab" data-filter="done" aria-selected="false">Done</button>
+      </div>
+      <div class="bulk-actions">
+        <button class="btn text-btn" id="markAllBtn" type="button">Toggle all</button>
+        <button class="btn text-btn danger" id="clearDoneBtn" type="button">Clear done</button>
+      </div>
+    </section>
+
+    <main id="taskList" tabindex="-1">
+      <ul class="list" id="list" aria-live="polite" aria-label="Tasks"></ul>
+      <div class="empty" id="empty" hidden>
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="m8.5 12 2.25 2.25L15.75 9" /></svg>
+        <strong>No tasks yet</strong>
+        <span>Add your first task to get started.</span>
+      </div>
+    </main>
+
+    <footer>
+      <p><kbd>Enter</kbd> adds a task · Double-click a title to edit</p>
+      <p>Saved locally on this device.</p>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const STORAGE_KEY = "todo.v1.items";
+    const SETTINGS_KEY = "todo.v1.settings";
+
+    const state = {
+      items: [],
+      filter: "all",
+      search: "",
+      sort: "newest", // newest | oldest | due
+    };
+
+    const settings = {
+      lastUsedPriority: "Medium",
+    };
+
+    const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+    function load() {
+      try {
+        state.items = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch { state.items = []; }
+
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+        if (saved && typeof saved === "object") Object.assign(settings, saved);
+      } catch {}
+
+      $("priorityInput").value = settings.lastUsedPriority || "Medium";
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function fmtDateISO(d) {
+      if (!d) return "";
+      return new Date(d + "T00:00:00").toISOString().slice(0,10);
+    }
+
+    function formatDueDate(value) {
+      if (!value) return "";
+      const due = new Date(value + "T00:00:00");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      if (due.getTime() === today.getTime()) return "Today";
+      if (due.getTime() === tomorrow.getTime()) return "Tomorrow";
+      return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(due);
+    }
+
+    function isOverdue(item) {
+      if (!item.due || item.done) return false;
+      const today = new Date();
+      const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const due = new Date(item.due + "T00:00:00");
+      return due < t;
+    }
+
+    function sortItems(items) {
+      const copy = [...items];
+      if (state.sort === "newest") {
+        copy.sort((a,b) => b.createdAt - a.createdAt);
+      } else if (state.sort === "oldest") {
+        copy.sort((a,b) => a.createdAt - b.createdAt);
+      } else if (state.sort === "due") {
+        copy.sort((a,b) => {
+          const ad = a.due ? Date.parse(a.due) : Infinity;
+          const bd = b.due ? Date.parse(b.due) : Infinity;
+          if (ad !== bd) return ad - bd;
+          return b.createdAt - a.createdAt;
+        });
+      }
+      return copy;
+    }
+
+    function filteredItems() {
+      let items = state.items;
+
+      if (state.filter === "active") items = items.filter(i => !i.done);
+      if (state.filter === "done") items = items.filter(i => i.done);
+
+      const q = state.search.trim().toLowerCase();
+      if (q) {
+        items = items.filter(i =>
+          i.text.toLowerCase().includes(q) ||
+          (i.priority || "").toLowerCase().includes(q) ||
+          (i.due || "").includes(q)
+        );
+      }
+
+      return sortItems(items);
+    }
+
+    function setTab(filter) {
+      state.filter = filter;
+      document.querySelectorAll(".tab").forEach(btn => {
+        const selected = btn.dataset.filter === filter;
+        btn.setAttribute("aria-selected", String(selected));
+      });
+      render();
+    }
+
+    function updateStats() {
+      const total = state.items.length;
+      const done = state.items.filter(i => i.done).length;
+      const active = total - done;
+      $("countAll").textContent = total;
+      $("countActive").textContent = active;
+      $("countDone").textContent = done;
+      $("markAllBtn").disabled = total === 0;
+      $("clearDoneBtn").disabled = done === 0;
+    }
+
+    function render() {
+      const list = $("list");
+      list.innerHTML = "";
+      const items = filteredItems();
+
+      $("empty").hidden = items.length !== 0;
+
+      for (const item of items) {
+        const li = document.createElement("li");
+        li.className = "item";
+        li.dataset.id = item.id;
+        li.dataset.priority = item.priority || "Medium";
+        li.dataset.done = String(item.done);
+
+        const check = document.createElement("label");
+        check.className = "check";
+        check.innerHTML = `
+          <input type="checkbox" ${item.done ? "checked" : ""}>
+          <span></span>
+        `;
+        check.querySelector("input").setAttribute("aria-label", `Mark ${item.text} as ${item.done ? "active" : "done"}`);
+        check.querySelector("input").addEventListener("change", (e) => {
+          toggleDone(item.id, e.target.checked);
+        });
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        const textRow = document.createElement("div");
+        textRow.className = "text";
+
+        const task = document.createElement("div");
+        task.className = "task" + (item.done ? " done" : "");
+        task.textContent = item.text;
+        task.title = "Double-click to edit";
+        task.addEventListener("dblclick", () => startInlineEdit(item.id, task));
+
+        textRow.appendChild(task);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const pr = document.createElement("span");
+        const priority = item.priority || "Medium";
+        pr.className = `pill priority ${priority.toLowerCase()}`;
+        pr.textContent = priority;
+
+        meta.appendChild(pr);
+
+        if (item.due) {
+          const due = document.createElement("span");
+          due.className = "pill" + (isOverdue(item) ? " overdue" : "");
+          due.textContent = isOverdue(item) ? `Overdue · ${formatDueDate(item.due)}` : formatDueDate(item.due);
+          meta.appendChild(due);
+        }
+
+        const created = document.createElement("span");
+        created.className = "pill created";
+        const dt = new Date(item.createdAt);
+        created.textContent = `Added ${dt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+        meta.appendChild(created);
+
+        content.appendChild(textRow);
+        content.appendChild(meta);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const editBtn = iconButton("edit", "Edit task");
+        editBtn.addEventListener("click", () => startInlineEdit(item.id, task));
+
+        const dupBtn = iconButton("duplicate", "Duplicate task");
+        dupBtn.addEventListener("click", () => duplicateItem(item.id));
+
+        const delBtn = iconButton("delete", "Delete task");
+        delBtn.addEventListener("click", () => deleteItem(item.id));
+
+        actions.appendChild(editBtn);
+        actions.appendChild(dupBtn);
+        actions.appendChild(delBtn);
+
+        li.appendChild(check);
+        li.appendChild(content);
+        li.appendChild(actions);
+
+        list.appendChild(li);
+      }
+
+      updateStats();
+      save();
+    }
+
+    function iconButton(action, label) {
+      const icons = {
+        edit: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
+        duplicate: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+        delete: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>'
+      };
+      const b = document.createElement("button");
+      b.className = "iconBtn";
+      b.type = "button";
+      b.dataset.action = action;
+      b.setAttribute("aria-label", label);
+      b.innerHTML = icons[action];
+      return b;
+    }
+
+    function addItem(text, due, priority) {
+      const clean = text.trim();
+      if (!clean) return;
+
+      const item = {
+        id: uid(),
+        text: clean,
+        done: false,
+        due: due ? fmtDateISO(due) : "",
+        priority: priority || "Medium",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      state.items.unshift(item);
+      render();
+    }
+
+    function deleteItem(id) {
+      state.items = state.items.filter(i => i.id !== id);
+      render();
+    }
+
+    function duplicateItem(id) {
+      const src = state.items.find(i => i.id === id);
+      if (!src) return;
+      addItem(src.text, src.due, src.priority);
+    }
+
+    function toggleDone(id, done) {
+      const it = state.items.find(i => i.id === id);
+      if (!it) return;
+      it.done = !!done;
+      it.updatedAt = Date.now();
+      render();
+    }
+
+    function startInlineEdit(id, taskEl) {
+      const it = state.items.find(i => i.id === id);
+      if (!it) return;
+
+      const input = document.createElement("input");
+      input.className = "input inline-edit";
+      input.value = it.text;
+
+      const parent = taskEl.parentElement;
+      parent.replaceChild(input, taskEl);
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+
+      const finish = (commit) => {
+        const newText = input.value.trim();
+        const back = document.createElement("div");
+        back.className = "task" + (it.done ? " done" : "");
+        back.textContent = commit && newText ? newText : it.text;
+        back.title = "Double-click to edit";
+        back.addEventListener("dblclick", () => startInlineEdit(id, back));
+
+        parent.replaceChild(back, input);
+
+        if (commit && newText && newText !== it.text) {
+          it.text = newText;
+          it.updatedAt = Date.now();
+          render();
+        }
+      };
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") finish(true);
+        if (e.key === "Escape") finish(false);
+      });
+      input.addEventListener("blur", () => finish(true));
+    }
+
+    function clearDone() {
+      state.items = state.items.filter(i => !i.done);
+      render();
+    }
+
+    function toggleAll() {
+      const anyActive = state.items.some(i => !i.done);
+      state.items.forEach(i => i.done = anyActive);
+      state.items.forEach(i => i.updatedAt = Date.now());
+      render();
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify({ items: state.items, settings }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "todo-export.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importJSON(file) {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed || typeof parsed !== "object") throw new Error("Invalid JSON");
+
+      if (Array.isArray(parsed.items)) {
+        // minimal validation
+        state.items = parsed.items
+          .filter(x => x && typeof x.text === "string")
+          .map(x => ({
+            id: typeof x.id === "string" ? x.id : uid(),
+            text: x.text,
+            done: !!x.done,
+            due: typeof x.due === "string" ? x.due : "",
+            priority: ["High","Medium","Low"].includes(x.priority) ? x.priority : "Medium",
+            createdAt: typeof x.createdAt === "number" ? x.createdAt : Date.now(),
+            updatedAt: typeof x.updatedAt === "number" ? x.updatedAt : Date.now(),
+          }));
+      }
+      if (parsed.settings && typeof parsed.settings === "object") {
+        Object.assign(settings, parsed.settings);
+      }
+      $("priorityInput").value = settings.lastUsedPriority || "Medium";
+      render();
+    }
+
+    // Wire up UI
+    $("addBtn").addEventListener("click", () => {
+      const text = $("taskInput").value;
+      const due = $("dueInput").value;
+      const pr = $("priorityInput").value;
+      settings.lastUsedPriority = pr;
+      addItem(text, due, pr);
+      $("taskInput").value = "";
+      $("taskInput").focus();
+    });
+
+    $("taskInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") $("addBtn").click();
+    });
+
+    $("searchInput").addEventListener("input", (e) => {
+      state.search = e.target.value;
+      render();
+    });
+
+    document.querySelectorAll(".tab").forEach(btn => {
+      btn.addEventListener("click", () => setTab(btn.dataset.filter));
+    });
+
+    $("clearDoneBtn").addEventListener("click", clearDone);
+    $("markAllBtn").addEventListener("click", toggleAll);
+
+    $("sortBtn").addEventListener("click", () => {
+      state.sort = state.sort === "newest" ? "oldest" : (state.sort === "oldest" ? "due" : "newest");
+      $("sortBtn").textContent = state.sort === "newest" ? "Newest" : state.sort === "oldest" ? "Oldest" : "Due date";
+      render();
+    });
+
+    $("exportBtn").addEventListener("click", exportJSON);
+
+    $("importBtn").addEventListener("click", () => $("importFile").click());
+    $("importFile").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try { await importJSON(file); }
+      catch (err) { alert("Import failed: " + err.message); }
+      e.target.value = "";
+    });
+
+    // Init
+    $("currentDate").textContent = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric"
+    }).format(new Date());
+    load();
+    render();
+  </script>
+</body>
+</html>

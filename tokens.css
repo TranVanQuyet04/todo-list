@@ -1,0 +1,62 @@
+/* Hallmark · tokens · custom dark productivity system */
+:root {
+  color-scheme: dark;
+
+  --color-paper: oklch(17% 0.012 270);
+  --color-paper-2: oklch(20% 0.014 270);
+  --color-paper-3: oklch(24% 0.015 270);
+  --color-ink: oklch(96% 0.008 270);
+  --color-ink-2: oklch(84% 0.012 270);
+  --color-muted: oklch(68% 0.018 270);
+  --color-neutral: oklch(60% 0.018 270);
+  --color-rule: oklch(32% 0.018 270);
+  --color-rule-2: oklch(27% 0.016 270);
+  --color-accent: oklch(72% 0.115 275);
+  --color-accent-soft: oklch(28% 0.048 275);
+  --color-accent-ink: oklch(17% 0.018 275);
+  --color-focus: oklch(78% 0.145 270);
+  --color-danger: oklch(74% 0.105 20);
+  --color-danger-soft: oklch(24% 0.032 20);
+  --color-warning: oklch(79% 0.105 75);
+  --color-warning-soft: oklch(25% 0.035 75);
+  --color-low: oklch(76% 0.075 190);
+  --color-low-soft: oklch(24% 0.026 190);
+  --color-success: oklch(77% 0.095 155);
+  --color-shadow: oklch(8% 0.01 270 / 0.18);
+
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outlier: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.5rem;
+  --text-xl: 2rem;
+
+  --radius-sm: 0.5rem;
+  --radius-input: 0.75rem;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --control-height: 2.875rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 180ms;
+  --dur-long: 300ms;
+
+  --rule-thin: 1px;
+}
