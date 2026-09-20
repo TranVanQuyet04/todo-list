@@ -14,9 +14,8 @@
   <div class="app">
     <header class="app-header">
       <div>
-        <p class="eyebrow">Daily planner</p>
         <h1>My Schedule</h1>
-        <p id="selectedDateLabel" class="selected-date"></p>
+        <p class="selected-date">Plan your day by time</p>
       </div>
       <p class="save-note">
         <span class="save-dot" aria-hidden="true"></span>
@@ -25,21 +24,21 @@
     </header>
 
     <nav class="date-navigator" aria-label="Choose schedule date">
-      <button class="icon-button date-arrow" id="previousDayBtn" type="button" aria-label="Previous day">
+      <button class="icon-button date-arrow" id="previousDayBtn" type="button" aria-label="Previous week">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
       </button>
       <div class="date-strip" id="dateStrip"></div>
-      <button class="icon-button date-arrow" id="nextDayBtn" type="button" aria-label="Next day">
+      <button class="icon-button date-arrow" id="nextDayBtn" type="button" aria-label="Next week">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
       </button>
       <button class="button ghost today-button" id="todayBtn" type="button">Today</button>
     </nav>
 
     <section class="day-overview" aria-labelledby="dayHeading">
-      <div>
+      <div class="day-summary">
         <p class="day-kicker" id="dayContext">Today</p>
-        <h2 id="dayHeading">Your day</h2>
-        <p class="progress-copy" id="progressCopy">0 / 0 completed</p>
+        <h2 id="dayHeading">Saturday, Sep 26</h2>
+        <p class="progress-copy" id="progressCopy">0 of 0 completed</p>
       </div>
       <div class="progress-track" role="progressbar" aria-label="Daily completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <span id="progressBar"></span>
@@ -61,32 +60,42 @@
         <button class="filter-button" data-filter="active" type="button" aria-pressed="false">Active</button>
         <button class="filter-button" data-filter="completed" type="button" aria-pressed="false">Completed</button>
       </div>
-      <label class="sort-control" for="sortSelect">
-        <span>Sort</span>
-        <select id="sortSelect">
-          <option value="time">Time</option>
-          <option value="priority">Priority</option>
-          <option value="newest">Newest</option>
-        </select>
-      </label>
+      <details class="utility-menu" id="utilityMenu">
+        <summary class="icon-button" aria-label="More schedule actions">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+        </summary>
+        <div class="utility-popover">
+          <label class="menu-sort" for="sortSelect">
+            <span>Sort tasks</span>
+            <select id="sortSelect">
+              <option value="time">Time</option>
+              <option value="priority">Priority</option>
+              <option value="newest">Newest</option>
+            </select>
+          </label>
+          <button id="toggleAllBtn" type="button">Toggle day</button>
+          <button class="danger" id="clearCompletedBtn" type="button">Clear completed</button>
+          <button id="exportBtn" type="button">Export JSON</button>
+          <input id="importFile" type="file" accept="application/json,.json" hidden />
+          <button id="importBtn" type="button">Import JSON</button>
+        </div>
+      </details>
     </section>
 
     <main id="dailySchedule" tabindex="-1">
       <section class="schedule-section" aria-labelledby="scheduleHeading">
         <div class="section-heading">
           <div>
-            <p class="section-label">Schedule</p>
-            <h2 id="scheduleHeading">Timed tasks</h2>
+            <h2 id="scheduleHeading">Daily timetable</h2>
           </div>
           <span id="scheduledCount" class="section-count">0 tasks</span>
         </div>
-        <div class="timeline" id="timeline" aria-live="polite"></div>
+        <div class="timetable" id="timeline" aria-live="polite"></div>
       </section>
 
       <section class="schedule-section unscheduled-section" id="unscheduledSection" aria-labelledby="unscheduledHeading">
         <div class="section-heading">
           <div>
-            <p class="section-label">Flexible</p>
             <h2 id="unscheduledHeading">Unscheduled</h2>
           </div>
           <span id="unscheduledCount" class="section-count">0 tasks</span>
@@ -104,7 +113,6 @@
       <section class="overdue-section" id="overdueSection" aria-labelledby="overdueHeading" hidden>
         <div class="section-heading">
           <div>
-            <p class="section-label overdue-label">Needs attention</p>
             <h2 id="overdueHeading">Overdue</h2>
           </div>
           <span id="overdueCount" class="section-count">0 tasks</span>
@@ -115,13 +123,7 @@
 
     <footer class="app-footer">
       <p>Double-click a task title to edit it.</p>
-      <div class="footer-actions" aria-label="Task utilities">
-        <button class="text-button" id="toggleAllBtn" type="button">Toggle day</button>
-        <button class="text-button danger" id="clearCompletedBtn" type="button">Clear completed</button>
-        <button class="text-button" id="exportBtn" type="button">Export</button>
-        <input id="importFile" type="file" accept="application/json,.json" hidden />
-        <button class="text-button" id="importBtn" type="button">Import</button>
-      </div>
+      <p>06:00–23:00 · Saved locally</p>
     </footer>
   </div>
 
@@ -142,32 +144,10 @@
         <input id="taskTitle" name="title" type="text" maxlength="160" autocomplete="off" required />
       </label>
 
-      <label class="form-field" for="taskDescription">
-        <span>Description <small>Optional</small></span>
-        <textarea id="taskDescription" name="description" rows="3" maxlength="600"></textarea>
+      <label class="form-field" for="taskDate">
+        <span>Date</span>
+        <input id="taskDate" name="date" type="date" required />
       </label>
-
-      <div class="form-grid">
-        <label class="form-field" for="taskDate">
-          <span>Date</span>
-          <input id="taskDate" name="date" type="date" required />
-        </label>
-        <label class="form-field" for="taskPriority">
-          <span>Priority</span>
-          <select id="taskPriority" name="priority">
-            <option value="Low">Low</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="High">High</option>
-          </select>
-        </label>
-      </div>
-
-      <label class="no-time-control">
-        <input id="noSpecificTime" type="checkbox" />
-        <span class="checkbox-visual" aria-hidden="true"></span>
-        <span>No specific time</span>
-      </label>
-
       <div class="time-fields" id="timeFields">
         <label class="form-field" for="taskStartTime">
           <span>Starts</span>
@@ -179,6 +159,27 @@
           <input id="taskEndTime" name="endTime" type="time" />
         </label>
       </div>
+
+      <label class="form-field priority-field" for="taskPriority">
+        <span>Priority</span>
+        <select id="taskPriority" name="priority">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+      </label>
+
+      <label class="no-time-control">
+        <input id="noSpecificTime" type="checkbox" />
+        <span class="checkbox-visual" aria-hidden="true"></span>
+        <span>No specific time</span>
+      </label>
+
+      <button class="description-toggle" id="descriptionToggle" type="button" aria-expanded="false" aria-controls="descriptionField">+ Add description</button>
+      <label class="form-field description-field" id="descriptionField" for="taskDescription" hidden>
+        <span>Description <small>Optional</small></span>
+        <textarea id="taskDescription" name="description" rows="2" maxlength="600"></textarea>
+      </label>
 
       <p class="form-error" id="formError" role="alert" hidden></p>
       <div class="dialog-actions">
@@ -447,9 +448,12 @@
     }
 
     function renderHeader() {
-      $("selectedDateLabel").textContent = formatDisplayDate(state.selectedDate);
       $("dayContext").textContent = relativeDateLabel(state.selectedDate);
-      $("dayHeading").textContent = state.selectedDate === getTodayLocalDate() ? "Today’s plan" : "Daily plan";
+      $("dayHeading").textContent = new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      }).format(parseLocalDate(state.selectedDate));
       document.title = `${relativeDateLabel(state.selectedDate)} · Todo Schedule`;
       $("todayBtn").disabled = state.selectedDate === getTodayLocalDate();
     }
@@ -457,8 +461,10 @@
     function renderDateStrip() {
       const strip = $("dateStrip");
       strip.innerHTML = "";
-      for (let offset = -3; offset <= 3; offset += 1) {
-        const dateKey = shiftDate(state.selectedDate, offset);
+      const selected = parseLocalDate(state.selectedDate);
+      const weekStart = shiftDate(state.selectedDate, -selected.getDay());
+      for (let offset = 0; offset < 7; offset += 1) {
+        const dateKey = shiftDate(weekStart, offset);
         const date = parseLocalDate(dateKey);
         const button = document.createElement("button");
         button.type = "button";
@@ -477,7 +483,7 @@
       const tasks = getTasksForDate(state.selectedDate);
       const completed = tasks.filter((task) => task.completed).length;
       const percent = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
-      $("progressCopy").textContent = `${completed} / ${tasks.length} completed`;
+      $("progressCopy").textContent = `${completed} of ${tasks.length} completed`;
       $("progressBar").style.width = `${percent}%`;
       const progress = document.querySelector(".progress-track");
       progress.setAttribute("aria-valuenow", String(percent));
@@ -577,12 +583,13 @@
       return hour * 60 + minute;
     }
 
-    function makeCurrentTimeIndicator() {
+    function makeCurrentTimeIndicator(top) {
       const now = new Date();
       const indicator = document.createElement("div");
       indicator.className = "current-time";
+      indicator.style.setProperty("--time-top", `${top}px`);
       indicator.setAttribute("aria-label", "Current time");
-      indicator.innerHTML = `<span></span><strong>${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now)}</strong><span></span>`;
+      indicator.innerHTML = `<span></span><i></i><strong>${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now)}</strong>`;
       return indicator;
     }
 
@@ -591,29 +598,66 @@
       const tasks = getScheduledTasks();
       timeline.innerHTML = "";
       $("scheduledCount").textContent = `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}`;
+      const startHour = 6;
+      const endHour = 24;
+      const pixelsPerHour = 64;
+      timeline.style.setProperty("--timetable-height", `${(endHour - startHour) * pixelsPerHour}px`);
 
-      const showNow = state.selectedDate === getTodayLocalDate();
-      let indicatorAdded = false;
+      const rail = document.createElement("div");
+      rail.className = "time-rail";
+      for (let hour = startHour; hour < endHour; hour += 1) {
+        const row = document.createElement("div");
+        row.className = "hour-row";
+        row.style.setProperty("--hour-index", String(hour - startHour));
+        row.innerHTML = `<time datetime="${pad(hour)}:00">${pad(hour)}:00</time><span></span>`;
+        rail.appendChild(row);
+      }
+      timeline.appendChild(rail);
+
+      const events = document.createElement("div");
+      events.className = "timetable-events";
+      const groups = [];
+      let group = [];
+      let groupEnd = -1;
       tasks.forEach((task) => {
-        if (showNow && !indicatorAdded && timeToMinutes(task.startTime) >= currentMinutes()) {
-          timeline.appendChild(makeCurrentTimeIndicator());
-          indicatorAdded = true;
+        const start = timeToMinutes(task.startTime);
+        const end = timeToMinutes(task.endTime);
+        if (group.length && start >= groupEnd) {
+          groups.push(group);
+          group = [];
+          groupEnd = -1;
         }
-        const group = document.createElement("div");
-        group.className = "timeline-entry";
-        const time = document.createElement("time");
-        time.dateTime = task.startTime;
-        time.textContent = formatTime(task.startTime);
-        group.append(time, createTaskRow(task, { timeline: true }));
-        timeline.appendChild(group);
+        group.push({ task, start, end });
+        groupEnd = Math.max(groupEnd, end);
       });
-      if (showNow && !indicatorAdded) timeline.appendChild(makeCurrentTimeIndicator());
+      if (group.length) groups.push(group);
 
-      if (!tasks.length && !showNow) {
-        const note = document.createElement("p");
-        note.className = "section-empty";
-        note.textContent = "No timed tasks for this view.";
-        timeline.appendChild(note);
+      const positioned = groups.flatMap((taskGroup) => {
+        const laneEnds = [];
+        const entries = taskGroup.map((entry) => {
+          let lane = laneEnds.findIndex((laneEnd) => laneEnd <= entry.start);
+          if (lane === -1) lane = laneEnds.length;
+          laneEnds[lane] = entry.end;
+          return { ...entry, lane };
+        });
+        return entries.map((entry) => ({ ...entry, laneCount: Math.max(1, laneEnds.length) }));
+      });
+
+      positioned.forEach(({ task, start, end, lane, laneCount }) => {
+        const card = createTaskRow(task, { timeline: true });
+        const top = Math.max(0, ((start - startHour * 60) / 60) * pixelsPerHour);
+        const rawHeight = ((end - start) / 60) * pixelsPerHour;
+        card.style.setProperty("--task-top", `${top}px`);
+        card.style.setProperty("--task-height", `${Math.max(44, rawHeight - 4)}px`);
+        card.style.setProperty("--task-left", `calc(${(lane / laneCount) * 100}% + ${lane * 3}px)`);
+        card.style.setProperty("--task-width", `calc(${100 / laneCount}% - ${Math.max(0, laneCount - 1) * 3}px)`);
+        events.appendChild(card);
+      });
+      timeline.appendChild(events);
+
+      if (state.selectedDate === getTodayLocalDate()) {
+        const minutes = Math.min(endHour * 60 - 1, Math.max(startHour * 60, currentMinutes()));
+        timeline.appendChild(makeCurrentTimeIndicator(((minutes - startHour * 60) / 60) * pixelsPerHour));
       }
     }
 
@@ -678,7 +722,11 @@
       $("taskPriority").value = task?.priority || settings.lastUsedPriority || "Medium";
       $("taskStartTime").value = task?.startTime || "";
       $("taskEndTime").value = task?.endTime || "";
-      $("noSpecificTime").checked = !task?.startTime;
+      $("noSpecificTime").checked = task ? !task.startTime : false;
+      const showDescription = Boolean(task?.description);
+      $("descriptionField").hidden = !showDescription;
+      $("descriptionToggle").hidden = showDescription;
+      $("descriptionToggle").setAttribute("aria-expanded", String(showDescription));
       $("formError").hidden = true;
       syncTimeFields();
       $("taskDialog").showModal();
@@ -784,8 +832,8 @@
       return element.innerHTML;
     }
 
-    $("previousDayBtn").addEventListener("click", () => changeSelectedDate(shiftDate(state.selectedDate, -1)));
-    $("nextDayBtn").addEventListener("click", () => changeSelectedDate(shiftDate(state.selectedDate, 1)));
+    $("previousDayBtn").addEventListener("click", () => changeSelectedDate(shiftDate(state.selectedDate, -7)));
+    $("nextDayBtn").addEventListener("click", () => changeSelectedDate(shiftDate(state.selectedDate, 7)));
     $("todayBtn").addEventListener("click", () => changeSelectedDate(getTodayLocalDate()));
     $("addTaskBtn").addEventListener("click", () => openTaskForm());
     $("emptyAddBtn").addEventListener("click", () => openTaskForm());
@@ -793,6 +841,12 @@
     $("cancelTaskBtn").addEventListener("click", closeTaskForm);
     $("taskForm").addEventListener("submit", submitTaskForm);
     $("noSpecificTime").addEventListener("change", syncTimeFields);
+    $("descriptionToggle").addEventListener("click", () => {
+      $("descriptionField").hidden = false;
+      $("descriptionToggle").hidden = true;
+      $("descriptionToggle").setAttribute("aria-expanded", "true");
+      $("taskDescription").focus();
+    });
     $("taskDialog").addEventListener("click", (event) => {
       if (event.target === $("taskDialog")) closeTaskForm();
     });
